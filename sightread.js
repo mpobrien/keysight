@@ -1,21 +1,187 @@
-
 var num = 0
-var Challenge = React.createClass({
-  render: function() {
-    var challengeClass = this.props.current ? "current" : "";
+
+function PhraseChallengeHandler(phrase){
+  this.phrase = phrase
+  this.currentIndex = 0;
+  this.noteState = {}
+  var outer = this
+
+  this.getHandler = function(callback){
+    return function(message){
+      var data = message.data; 
+      var eventtype = midiEventType(data);
+      console.log(eventtype)
+        console.log(data, getLetter(data))
+        if(!getLetter(data)){
+          return
+        }
+      var note = getLetter(data).toLowerCase() + "/" + parseInt(getOctave(data)-1);
+      if(eventtype=="Note On"){
+        outer.noteState[note] = true;
+        var correctState = {}
+        if(typeof outer.phrase[outer.currentIndex] == typeof ""){
+          correctState[outer.phrase[outer.currentIndex]] = true
+        }else{
+          if(outer.currentIndex>=0 && outer.currentIndex < outer.phrase.length){
+            outer.phrase[outer.currentIndex].forEach(function(x){
+              correctState[x] = true
+            })
+          }
+        }
+        if(diffState(correctState, outer.noteState)){
+          console.log("correct!")
+            outer.currentIndex+=1
+            if(callback){
+              callback()
+            }
+        }else{
+          console.log("incorrect!")
+        }
+      } else if(eventtype=="Note Off") {
+        delete outer.noteState[note]
+      }
+    }
+  }
+}
+
+var diffState = function(a,b){
+  aKeys = Object.keys(a)
+  bKeys = Object.keys(b)
+  console.log("a, b", aKeys, bKeys)
+  if(aKeys.length != bKeys.length){
+    return false
+  }
+  for(var i=0;i<aKeys.length;i++){
+    if(!(aKeys[i] in b) || a[aKeys[i]] != b[aKeys[i]]){
+      return false
+    }
+  }
+  return true
+}
+
+var MidiPlayerCallback = function(message){
+  var data = message.data; 
+  var eventtype = midiEventType(data);
+  if(eventtype=="Note On"){
+    MIDI.noteOn(0, data[1], 100, 0);
+  }else if(eventtype=="Note Off"){
+    MIDI.noteOff(0, data[1]);
+  }
+}
+
+var ChallengeSettings = React.createClass({
+  getInitialState: function(){
+    var keySignature = "C"
+    var clef = "treble"
+    var challenge = generateScaleChallenge(Scale.generate(keySignature.toLowerCase()+"/4", Scale.Steps.major), 16)
+    var pch = new PhraseChallengeHandler(challenge)
+    var phrase = <Phrase clef={clef} keySignature={keySignature} challenge={pch} ref="phrase"/>
+    console.log("HEY", phrase, "Asf", phrase.setState)
+    return {keySignature:keySignature, clef:clef, challengeHandler:pch, phrase:phrase}
+  },
+  componentDidMount: function(){
+    var cpt = this
+    setupMidi([MidiPlayerCallback, this.state.challengeHandler.getHandler(function(){ 
+      var p = cpt.refs.phrase;
+      p.repaintCanvas()
+      //console.log(p, p.repaintCanvas())
+
+    }) ])
+  },
+  onChange: function(){
+    var keySignature = React.findDOMNode(this.refs["keySignature"]).value
+    var clef = React.findDOMNode(this.refs["clef"]).value
+    var challenge = generateScaleChallenge(Scale.generate(keySignature.toLowerCase()+"/4", Scale.Steps.major), 16)
+    var pch = new PhraseChallengeHandler(challenge)
+    var phrase = <Phrase clef={clef} keySignature={keySignature} challenge={pch} ref="phrase"/>
+    this.setState({keySignature:keySignature, clef:clef, challengeHandler:pch, phrase:phrase})
+  },
+  render: function(){
     return (
-      <li className={challengeClass}> 
-        {this.props.challenge["name"]} 
-      </li>
+      <div>
+        <label>Key:&nbsp;
+        <select ref="clef" onChange={this.onChange}>
+          <option value="treble">Treble Only</option>
+          <option value="bass">Bass Only</option>
+          <option value="tb">Treble and Bass</option>
+        </select>
+        <select ref="keySignature" onChange={this.onChange}>
+          {_.map(scaleMaps.cMajor, function(x){return <option value={x} key={x}>{x}</option>})}
+        </select>
+        </label>
+        <div>
+          {this.state.phrase}
+        </div>
+      </div>
     )
   }
-});
+})
+
+var Phrase = React.createClass({
+  render: function() {
+    return (
+      <div>
+        <canvas ref="canv" width="600" height="400"></canvas>
+      </div>
+    )
+  },
+  repaintCanvas: function(){
+    var canv = React.findDOMNode(this.refs["canv"])
+    var renderer = new Vex.Flow.Renderer(canv, Vex.Flow.Renderer.Backends.CANVAS);
+    var ctx = renderer.getContext();
+    ctx.clear()
+    var stave = new Vex.Flow.Stave(12, 10, 800);
+    stave.addClef(this.props.clef, "default").setContext(ctx).draw();
+    stave.addKeySignature(this.props.keySignature)
+    stave.draw()
+    var staveNotes = []
+    for(var i=0;i<this.props.challenge.phrase.length;i++){
+      var key = this.props.challenge.phrase[i];
+      var note;
+      if(typeof key == typeof ""){
+        note = new Vex.Flow.StaveNote({ keys: [key], clef:this.props.clef, duration: "q"})
+      }else{
+        note =new Vex.Flow.StaveNote({ keys: key, clef:this.props.clef, duration: "q" })
+      }
+      if(i<this.props.challenge.currentIndex){
+        note.setStyle({strokeStyle:"#aaa", fillStyle:"#aaa"})
+      }
+      staveNotes.push(note);
+    }
+    voice = new Vex.Flow.Voice({ 
+      num_beats: this.props.challenge.phrase.length,
+      beat_value: 4,
+      resolution: Vex.Flow.RESOLUTION 
+    });
+    voice.addTickables(staveNotes);
+    Vex.Flow.Accidental.applyAccidentals([voice], this.props.keySignature || "C");
+    var formatter = new Vex.Flow.Formatter().joinVoices([voice]).format([voice], 500);
+    voice.draw(ctx, stave);
+  },
+  componentDidUpdate: function(){
+    this.repaintCanvas()
+  },
+  componentDidMount: function() {
+    this.repaintCanvas()
+  },
+})
+
+function generateScaleChallenge(scale, length){
+  var out = []
+  var length = length || 4
+  for(var i=0;i<length;i++){
+    var nextKey = _.sample(scale)
+    out.push(nextKey)
+  }
+  return out
+}
 
 var MAX_MIDI_VALUE = 127;
 
 var scaleMaps = {
   'cMajor': [ 'C', 'C#', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'G#', 'A', 'Bb', 'B' ]
 }
+
 var tones = scaleMaps.cMajor
 
 function regenerateChallenges(typesAllowed){
@@ -57,71 +223,12 @@ function getOctave(data, scale) {
   }
 }
 
-var major= {
-  name: "",
-  fullname: "major",
-  gen:  function(i) {
-    return [tones[i], tones[(i + 4) % 12], tones[(i + 7) % 12]]
-  }
-}
-
-var minor= {
-  name: "m",
-  fullname: "minor",
-  gen: function(i) {
-    return [tones[i], tones[(i + 3) % 12], tones[(i + 7) % 12]]
-  }
-}
-
-var dim= {
-  name: "dim",
-  fullname: "diminished",
-  gen: function(i) {
-    return [tones[i], tones[(i + 3) % 12], tones[(i + 6) % 12]]
-  }
-}
-
-var aug= {
-  name: "aug",
-  fullname: "augmented",
-  gen: function(i) {
-    return [tones[i], tones[(i + 4) % 12], tones[(i + 8) % 12]]
-  }
-}
-
-var seventh = {
-  name: "7",
-  fullname: "seventh",
-  gen: function(i){
-    return major.gen(i).concat(tones[(i + 10) % 12])
-  }
-}
-
-
-var maj7 = {
-  name:"maj7",
-  fullname: "major7th",
-  gen: function(i){
-    return major.gen(i).concat(tones[(i + 11) % 12])
-  }
-}
-
-var min7 = {
-  name:"m7",
-  fullname: "minor7th",
-  gen: function(i){
-    return minor.gen(i).concat(tones[(i + 10) % 12])
-  }
-}
-
-var chordTypes = [major, minor, maj7, min7, seventh]//, dim, aug]
-
 function midiEventType (data) {
-if (data[0] >= 128 && data[0] <= 143) {
-  return 'Note Off';
-}
-if (data[0] >= 144 && data[0] <= 159) {
-  return 'Note On';
+  if (data[0] >= 128 && data[0] <= 143) {
+    return 'Note Off';
+  }
+  if (data[0] >= 144 && data[0] <= 159) {
+    return 'Note On';
   }
   if (data[0] === 185) {
     if (data[1] === 11) {
@@ -147,170 +254,36 @@ function checkChallenge(input, chord){
   return Object.keys(chordFound).length == chord.length
 }
 
-var refreshCanvas = function(notes, ctx, stave){
-  var keys = []
-  var voice
-  var notecount = 0
-  for(var noteKey in notes){
-    notecount++
-      var key = noteKey.toLowerCase()//noteOnly(noteKey)[0].toLowerCase()+"/"+octaveOnly(noteKey)
-      keys.push(key)
-  }
-  if(notecount > 0){
-    var staveNote = new Vex.Flow.StaveNote({ keys: keys, duration: "w" });
-    voice = new Vex.Flow.Voice({ num_beats: 4, beat_value: 4, resolution: Vex.Flow.RESOLUTION });
-    voice.addTickables([staveNote]);
-    Vex.Flow.Accidental.applyAccidentals([voice], "C");
-    var formatter = new Vex.Flow.Formatter().joinVoices([voice]).format([voice], 500);
-  }
-  ctx.clear()
-  stave.draw()
-  if(notecount>0)
-    voice.draw(ctx, stave);
-}
 
-function noteOnly(noteName){
-  return noteName.split("/")[0]
-}
-
-function octaveOnly(noteName){
-  return noteName.split("/")[1]
-}
-function accidental(noteName){
-    var accidental = noteName.indexOf("#")
-    accidental = accidental < 0 ? noteName.indexOf("b") : accidental
-    if(accidental>=0){
-      return noteName[accidental]
-    }
-}
-
-var MidiState = React.createClass({
-  getInitialState: function() {
-    var canvas = $("canvas")[0];
-    var renderer = new Vex.Flow.Renderer(canvas, Vex.Flow.Renderer.Backends.CANVAS);
-    var ctx = renderer.getContext();
-    this.props.settings = {"major":false, "minor":true,"seventh":true, "m7":true, "maj7":true}
-    return {
-      notes: [],
-      ctx: ctx,
-      currentChallenge:0, 
-      challenges:regenerateChallenges(chordTypes),
-      events:[],
-      selectedTypes:chordTypes};
-  },
-  componentDidMount: function() {
-      var stave = new Vex.Flow.Stave(12, 10, 800);
-      stave.addClef("treble", "default").setContext(this.state.ctx).draw();
-      stave.addKeySignature("C")
-      var component = this
-      component.setState({notes:myState, ctx:this.state.ctx, stave:stave})
-      var vexCtx = this.state.ctx
-      if (navigator.requestMIDIAccess) {
-        navigator.requestMIDIAccess({
-          sysex: false // this defaults to 'false' and we won't be covering sysex in this article. 
-        }).then(function(midiAccess){ // success handler
-          // when we get a succesful response, run this code
-          var midi = midiAccess;
-
-          var inputs = midi.inputs.values();
-          console.log(inputs)
-          // loop over all available inputs and listen for any MIDI input
-          for (var input = inputs.next(); input && !input.done; input = inputs.next()) {
-            input.value.onmidimessage = function(message){
-              var data = message.data; // this gives us our [command/channel, note, velocity] data.
-              var note = getLetter(data) + "/" + getOctave(data);
-              var eventtype = midiEventType(data);
-              if(eventtype=="Note On"){
-                MIDI.noteOn(0, data[1], 100, 0);
-                myState[note] = true;
-                console.log(component.state.currentChallenge, component.state.challenges)
-                var result = checkChallenge(Object.keys(myState), component.state.challenges[component.state.currentChallenge].notes);
-                if(result){
-                  component.setState( {currentChallenge:component.state.currentChallenge+1})
-                }
-              }else if(eventtype=="Note Off"){
-                delete myState[note]
-                MIDI.noteOff(0, data[1]);
-              }
-              component.setState({notes:myState, ctx:vexCtx, stave:stave, events: component.state.events.concat(message)})
-              refreshCanvas(component.state.notes, component.state.ctx, component.state.stave)
-            }
-          }
-          refreshCanvas(component.state.notes, component.state.ctx, component.state.stave)
-        }, function(){
-          console.log("No access to MIDI devices or your browser doesn't support WebMIDI API. Please use WebMIDIAPIShim " + e);
-        });
-      } else {
-        alert("No MIDI support in your browser.");
-      }
-  },
-
-  update:function(s){
-    this.setState(s)
-  },
-
-
-  handleUserInput: function(filterText, inStockOnly) {
-    this.setState({
-      filterText: filterText,
-      inStockOnly: inStockOnly
-    });
-  },
-
-  render: function() {
-    var challengeElems = []
-    for(var i=0;i<this.state.challenges.length;i++){
-      challengeElems.push(<Challenge current={this.state.currentChallenge==i} challenge={this.state.challenges[i]}/>)
-    }
-    var inputs = []
-    for(var i=0;i<chordTypes.length;i++){
-      inputs.push(
-        <div><label><input ref={chordTypes[i].fullname} type="checkbox"/>{chordTypes[i].fullname}</label></div>
-      )
-    }
-    var reset = function(component){
-      return function(){
-        var selectedChordTypes = []
-        console.log("node", component.refs, React.findDOMNode(component.refs.major))
-        for(var i=0;i<chordTypes.length;i++){
-          var x = React.findDOMNode(component.refs[chordTypes[i].fullname])
-          if(x.checked){
-            selectedChordTypes.push(chordTypes[i])
+function setupMidi(callbacks){
+  if (navigator.requestMIDIAccess) {
+    navigator.requestMIDIAccess({sysex:false}).then(function(midiAccess){ 
+      var midi = midiAccess;
+      var inputs = midi.inputs.values();
+      for (var input = inputs.next(); input && !input.done; input = inputs.next()) {
+        input.value.onmidimessage = function(message){
+          for(var i=0;i<callbacks.length;i++){
+            callbacks[i](message)
           }
         }
-        component.setState({challenges:regenerateChallenges(selectedChordTypes), currentChallenge:0, selectedTypes:selectedChordTypes})
       }
-    }(this)
-
-    var eventDebug = []
-    for(var i=0;i<this.state.events.length;i++){
-      eventDebug.push(<li>note: {getNote(this.state.events[i].data)} octave: {getOctave(this.state.events[i].data)}</li>)
-    }
-
-    var events
-    return (
-      <div>
-        <ul>
-          {challengeElems}
-        </ul>
-        <div>{Object.keys(this.state.notes).join(",")}</div>
-        {inputs}
-        <button onClick={reset}>Reset</button>
-        <ul>{eventDebug}</ul>
-      </div>
-    )
+    }, function(){
+      throw Exception("No access to MIDI devices or your browser doesn't support WebMIDI API. Please use WebMIDIAPIShim:"+e);
+    });
+  } else {
+    throw Exception("No MIDI support in your browser.");
   }
-});
+}
 
-var myState={}
-var rootNode = <MidiState/>
+var myState = {}
 
-   
 $(document).ready(function() {
-  // request MIDI access
-  React.render( <div>{rootNode}</div>, document.getElementById('example'));
+  React.render(
+    <div>
+      <ChallengeSettings/>
+    </div>,
+    document.getElementById('example'));
 })
 
 //iim7 V7 Imaj7
 //Imaj7 vim7 iim7 VI 7
-
