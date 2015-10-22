@@ -1,9 +1,11 @@
 var num = 0
 
-function PhraseChallengeHandler(phrase){
+function PhraseChallengeHandler(phrase, keySignature, clef){
   this.phrase = phrase
   this.currentIndex = 0;
   this.noteState = {}
+  this.keySignature = keySignature
+  this.clef = clef
   var outer = this
 
   this.getHandler = function(callback){
