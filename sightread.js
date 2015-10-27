@@ -12,53 +12,51 @@ function PhraseChallengeHandler(phrase, keySignature, clef){
     return function(message){
       var data = message.data; 
       var eventtype = midiEventType(data);
-      console.log(eventtype)
-        console.log(data, getLetter(data))
-        if(!getLetter(data)){
-          return
-        }
+      if(!getLetter(data)){
+        return;
+      }
       var note = getLetter(data).toLowerCase() + "/" + parseInt(getOctave(data)-1);
       if(eventtype=="Note On"){
         outer.noteState[note] = true;
-        var correctState = {}
+        var correctState = {};
         if(typeof outer.phrase[outer.currentIndex] == typeof ""){
-          correctState[outer.phrase[outer.currentIndex]] = true
+          correctState[outer.phrase[outer.currentIndex]] = true;
         }else{
           if(outer.currentIndex>=0 && outer.currentIndex < outer.phrase.length){
             outer.phrase[outer.currentIndex].forEach(function(x){
-              correctState[x] = true
+              correctState[x] = true;
             })
           }
         }
         if(diffState(correctState, outer.noteState)){
           console.log("correct!")
-            outer.currentIndex+=1
+            outer.currentIndex += 1;
             if(callback){
               callback()
             }
         }else{
-          console.log("incorrect!")
+          console.log("incorrect!");
         }
       } else if(eventtype=="Note Off") {
-        delete outer.noteState[note]
+        delete outer.noteState[note];
       }
     }
   }
 }
 
 var diffState = function(a,b){
-  aKeys = Object.keys(a)
-  bKeys = Object.keys(b)
-  console.log("a, b", aKeys, bKeys)
+  aKeys = Object.keys(a);
+  bKeys = Object.keys(b);
+  console.log("a, b", aKeys, bKeys);
   if(aKeys.length != bKeys.length){
-    return false
+    return false;
   }
   for(var i=0;i<aKeys.length;i++){
     if(!(aKeys[i] in b) || a[aKeys[i]] != b[aKeys[i]]){
-      return false
+      return false;
     }
   }
-  return true
+  return true;
 }
 
 var MidiPlayerCallback = function(message){
@@ -73,30 +71,29 @@ var MidiPlayerCallback = function(message){
 
 var ChallengeSettings = React.createClass({
   getInitialState: function(){
-    var keySignature = "C"
-    var clef = "treble"
-    var challenge = generateScaleChallenge(Scale.generate(keySignature.toLowerCase()+"/4", Scale.Steps.major), 16)
-    var pch = new PhraseChallengeHandler(challenge)
+    var keySignature = "C";
+    var clef = "treble";
+    var challenge = generateScaleChallenge(Scale.generate(keySignature.toLowerCase()+"/4", Scale.Steps.major), 16);
+    var pch = new PhraseChallengeHandler(challenge);
     var phrase = <Phrase clef={clef} keySignature={keySignature} challenge={pch} ref="phrase"/>
-    console.log("HEY", phrase, "Asf", phrase.setState)
-    return {keySignature:keySignature, clef:clef, challengeHandler:pch, phrase:phrase}
+    console.log("HEY", phrase, "Asf", phrase.setState);
+    return {keySignature:keySignature, clef:clef, challengeHandler:pch, phrase:phrase};
   },
   componentDidMount: function(){
-    var cpt = this
+    var cpt = this;
     setupMidi([MidiPlayerCallback, this.state.challengeHandler.getHandler(function(){ 
       var p = cpt.refs.phrase;
-      p.repaintCanvas()
+      p.repaintCanvas();
       //console.log(p, p.repaintCanvas())
-
     }) ])
   },
   onChange: function(){
-    var keySignature = React.findDOMNode(this.refs["keySignature"]).value
-    var clef = React.findDOMNode(this.refs["clef"]).value
-    var challenge = generateScaleChallenge(Scale.generate(keySignature.toLowerCase()+"/4", Scale.Steps.major), 16)
-    var pch = new PhraseChallengeHandler(challenge)
+    var keySignature = React.findDOMNode(this.refs["keySignature"]).value;
+    var clef = React.findDOMNode(this.refs["clef"]).value;
+    var challenge = generateScaleChallenge(Scale.generate(keySignature.toLowerCase()+"/4", Scale.Steps.major), 16);
+    var pch = new PhraseChallengeHandler(challenge);
     var phrase = <Phrase clef={clef} keySignature={keySignature} challenge={pch} ref="phrase"/>
-    this.setState({keySignature:keySignature, clef:clef, challengeHandler:pch, phrase:phrase})
+    this.setState({keySignature:keySignature, clef:clef, challengeHandler:pch, phrase:phrase});
   },
   render: function(){
     return (
