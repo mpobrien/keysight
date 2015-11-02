@@ -6,6 +6,7 @@ var scaleTypes = [
   { name:"Major", major:Scale.Steps.major},
   { name:"Minor", major:Scale.Steps.minor},
   { name:"Harmonic Minor", major:Scale.Steps.harmonicMinor},
+  { name:"Blues", major:Scale.Steps.Blues},
 ]
 
 var MidiPlayerCallback = function(message){
@@ -17,10 +18,19 @@ var MidiPlayerCallback = function(message){
     MIDI.noteOff(0, data[1]);
   }
 }
-var diffState = function(a,b){
+var diffState = function(a,b, anyVoicing){
   aKeys = Object.keys(a)
   bKeys = Object.keys(b)
   console.log("a, b", aKeys, bKeys)
+  if(anyVoicing){
+	aKeys = _.map(aKeys, noteOnly)
+	bKeys = _.map(bKeys, noteOnly)
+	a = objectifyChordNotes(aKeys)
+	b = objectifyChordNotes(bKeys)
+  }
+  aKeys = _.map(aKeys, function(x){return x.toLowerCase()})
+  bKeys = _.map(bKeys, function(x){return x.toLowerCase()})
+
   if(aKeys.length != bKeys.length){
     return false
   }
@@ -32,6 +42,25 @@ var diffState = function(a,b){
   return true
 }
 
+function generateChordSequence(typesAllowed, n){
+  if(typesAllowed.length == 0){
+	return []
+  }
+  var challenges = []
+  for(var i=0;i<n;i++){
+    // get a random chord form the set of allowed chord types
+	var chordTypeName = _.sample(typesAllowed)
+	var chordObj = Scale.chordTypeByName(chordTypeName)
+
+	var rootNote = _.sample(scaleMaps.cMajor)
+
+	console.log(chordObj)
+	var ns = _.map(chordObj.gen(_.indexOf(scaleMaps.cMajor, rootNote)), function(x){return x.toLowerCase()}) 
+	challenges.push({name: rootNote + chordObj.name, notes: ns})
+  }
+  console.log("challenges is", challenges)
+  return challenges
+}
 
 function generateScalePhrase(scale, length){
   var out = []
@@ -43,44 +72,45 @@ function generateScalePhrase(scale, length){
   return out
 }
 
+objectifyChordNotes = function(ns){
+	return _.object(ns, _.times(ns.length, _.constant(true)));
+}
+
+
 function ChordChallengeHandler(chordsSeq){
   this.chordsSeq = chordsSeq
   this.currentIndex = 0;
   this.noteState = {}
+  this.correctState = objectifyChordNotes(chordsSeq[0].notes)
   var outer = this
+
 
   this.callback = function(message, onCorrect, onComplete){
     var data = message.data; 
     var eventtype = midiEventType(data);
+	console.log("expected", outer.correctState.notes)
+	console.log("actual", outer.noteState)
     if(!getLetter(data)){
       return;
     }
-    var note = getLetter(data).toLowerCase()
+    var note = getLetter(data).toLowerCase() + "/" + parseInt(getOctave(data)-1);
     if(eventtype=="Note On"){
       outer.noteState[note] = true;
-      var correctState = {};
-      if(typeof outer.phrase[outer.currentIndex] == typeof ""){
-        correctState[outer.phrase[outer.currentIndex]] = true;
-      }else{
-        if(outer.currentIndex>=0 && outer.currentIndex < outer.phrase.length){
-          outer.phrase[outer.currentIndex].forEach(function(x){
-            correctState[x] = true;
-          })
-        }
-      }
-      if(diffState(correctState, outer.noteState)){
-        outer.currentIndex+=1;
-        if(onCorrect){
-          onCorrect();
-        }
-        if(outer.currentIndex==outer.phrase.length){
-          onComplete()
-        }
-      }else{
-        console.log("incorrect!");
-      }
     } else if(eventtype=="Note Off") {
       delete outer.noteState[note];
+    }
+    if(diffState(outer.correctState, outer.noteState, true)){
+      if(outer.currentIndex==chordsSeq.length-1){
+        onComplete()
+      }else{
+		  if(onCorrect){
+			onCorrect();
+		  }
+		  outer.currentIndex += 1;
+		  outer.correctState = objectifyChordNotes(chordsSeq[outer.currentIndex].notes)
+	  }
+    }else{
+      console.log("incorrect!");
     }
   }
 }
@@ -135,37 +165,120 @@ var SiteContainer = React.createClass(
     { 
       midiCallback : function(message){
         var cpt = this;
-        this.state.challenge.callback(message, function(){
-          cpt.refs.phrase.repaintCanvas();
-        }, function(){
-          cpt.reset(cpt.state.formValues)
-        })
+		if(cpt.state.exerciseType == "phrase"){
+			this.state.challenge.callback(message, function(){
+				cpt.refs.phrase.repaintCanvas();
+			}, function(){
+			  cpt.resetPhrase(cpt.state.formValues)
+			})
+		}else{
+			this.state.challenge.callback(message, function(){
+				cpt.refs.chordChallengeList.incChordChallenge()
+			}, function(){
+				cpt.resetChords(cpt.state.chordFormValues)
+				cpt.refs.chordChallengeList.resetCounter()
+			})
+		}
       },
       getInitialState:function(){
         var phrase = generateScalePhrase(Scale.generate("c/4", Scale.Steps.Major), 16);
-        return {challenge:new PhraseChallengeHandler(phrase, "C", "treble"), formValues:{ keySignature:"C", clef:"treble", scaleType:"Major"}};
+		var phraseFormValues =  { keySignature:"C", clef:"treble", scaleType:"Major"}
+		var chordFormValues = {types:[""]}
+        return {exerciseType:"phrase", challenge:new PhraseChallengeHandler(phrase, "C", "treble"), phraseFormValues:phraseFormValues, chordFormValues:chordFormValues};
       },
-      reset: function(formValues){
+      resetPhrases: function(formValues){
         var rootOctave = formValues.clef == "treble" ? "/4" : "/3";
         var scaleSteps = Scale.Steps[formValues.scaleType]
-        var phrase = generateScalePhrase(Scale.generate(formValues.keySignature.toLowerCase()+rootOctave, scaleSteps), 16);
-        this.setState({challenge:new PhraseChallengeHandler(phrase, formValues.keySignature, formValues.clef), formValues:formValues});
+        var phrase = generateScalePhrase(Scale.generate(formValues.keySignature.toLowerCase() + rootOctave, scaleSteps), 16);
+        this.setState({challenge:new PhraseChallengeHandler(phrase, formValues.keySignature, formValues.clef), phraseFormValues:formValues});
       },
+	  resetChords: function(formValues){
+		var chordsSeq = generateChordSequence(formValues.types, 6)
+        this.setState({challenge:new ChordChallengeHandler(chordsSeq), chordFormValues:formValues, chordChallenge:chordsSeq});
+	  },
       componentWillMount:function(){
         setupMidi([MidiPlayerCallback, this.midiCallback]);
       },
+	  resetType: function(){
+        exerciseType = React.findDOMNode(this.refs.challengeType).value
+		this.setState({exerciseType:exerciseType})
+		if(exerciseType == "phrase"){
+			this.resetPhrases(this.state.phraseFormValues)
+		}else{
+			this.resetChords(this.state.chordFormValues)
+		}
+	  },
       render: function(){
         return (
           <div>
-            <SettingsForm changed={this.reset}/>
-            <PhraseCanvas challenge={this.state.challenge} ref="phrase"/>
+			<select onChange={this.resetType} ref="challengeType">
+				<option value="phrase">Phrase</option>
+				<option value="chords">Chords</option>
+			</select>
+            <PhraseSettingsForm changed={this.resetPhrases}/>
+            {
+				this.state.exerciseType == 'phrase' 
+				   ?  
+					<PhraseCanvas challenge={this.state.challenge} ref="phrase" enabled={this.state.exerciseType=="phrase"}/> 
+				   : <div>
+						<ChordSettingsForm changed={this.resetChords}/>
+						<ChordChallenges challenges={this.state.chordChallenge} ref="chordChallengeList" enabled={this.state.exerciseType=="chords"}/>
+					</div>
+			}
           </div>
         );
       }
     }
 )
 
-var SettingsForm = React.createClass(
+var ChordChallenges = React.createClass( 
+{
+	getInitialState:function(){
+		return {currentChallengeIndex:0}
+	},
+	resetCounter: function(){
+		this.setState({currentChallengeIndex:0})
+	},
+	incChordChallenge: function(){
+		this.setState({currentChallengeIndex:this.state.currentChallengeIndex+1})
+	},
+	render: function(){
+	  var cpt = this;
+	  return (
+		<div className="container">
+			<div className="row">
+				{_.map(this.props.challenges, function(x, i){ return <div key={"chordChallenge_" + i} className={"pull-left chordBox" + (i==cpt.state.currentChallengeIndex?" selected":"")}>{x.name}</div>})}
+			</div>
+		</div>
+	  )
+	}
+}
+)
+
+var ChordSettingsForm = React.createClass(
+  {
+    triggerFormUpdate: function(callback){
+	  var component = this
+	  formValues = {
+		types:_.pluck(_.filter(Scale.Chords, function(x){ return React.findDOMNode(component.refs[x.name]).checked }), "name")
+	  }
+	  this.props.changed(formValues)
+    },
+    render: function(){
+      return (
+        <form onChange={this.triggerFormUpdate}>
+			<ul>
+			{_.map(Scale.Chords, function(x){
+				return <li><label>{x.fullname}<input ref={x.name} type="checkbox"/></label></li>
+			})}
+			</ul>
+        </form>
+      );
+    },
+  }
+)
+
+var PhraseSettingsForm = React.createClass(
   {
     triggerFormUpdate: function(callback){
       var data = {
@@ -210,12 +323,15 @@ var PhraseCanvas = React.createClass(
       this.repaintCanvas();
     },
     repaintCanvas: function(){
+	  if(!this.props.enabled){
+		  return
+	  }
+	  console.log("repainting!")
       var canv = React.findDOMNode(this.refs["canv"]);
       var renderer = new Vex.Flow.Renderer(canv, Vex.Flow.Renderer.Backends.CANVAS);
       var ctx = renderer.getContext();
       ctx.clear();
       var stave = new Vex.Flow.Stave(12, 10, 800);
-      console.log("asfsaf", this.props.challenge.clef);
       stave.addClef(this.props.challenge.clef, "default").setContext(ctx).draw();
       stave.addKeySignature(this.props.challenge.keySignature);
       stave.draw();
@@ -247,7 +363,7 @@ var PhraseCanvas = React.createClass(
 )
 
 $(document).ready(function() {
-  React.render(
+  ReactDOM.render(
     <div>
       <SiteContainer/>
     </div>,

@@ -14,54 +14,87 @@ function accidental(noteName){
     }
 }
 
-var Scale = function(){
-  notes = [ 'c', 'c#', 'd', 'eb', 'e', 'f', 'f#', 'g', 'g#', 'a', 'bb', 'b' ]
-  enharmonics = [["c#","db"], ["eb","d#"], ["f#", "gb"], ["g#", "ab"], ["bb", "a#"]]
 
+// progressions
+// I IV 
+// I V
+// I IV V
+// I IV V7
+// I IV I V
+// I IV I V7
+// I IV V IV
+// I V vi IV
+// I ii IV V
+// I ii V 
+// I vi ii V
+// I vi IV V
+// I vi ii IV V7
+// i vi ii V7 ii 
+// IV I IV V
+// ii7 V7 I
+// I IV I V7 IV I
+// I IV I V7 IV I
+// I IV vii° iii vi ii V I
+
+notes = [ 'c', 'c#', 'd', 'eb', 'e', 'f', 'f#', 'g', 'g#', 'a', 'bb', 'b' ]
+enharmonics = [["c#","db"], ["eb","d#"], ["f#", "gb"], ["g#", "ab"], ["bb", "a#"]]
+
+var scaleMaps = {
+  'cMajor': [ 'C', 'C#', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'G#', 'A', 'Bb', 'B' ]
+}
+var tones = scaleMaps.cMajor
+
+var Scale = function(){
+  var supportedChords = [
+		{ name: "", fullname: "major", 
+		  gen: function(i) {
+				  return [tones[i], tones[(i + 4) % 12], tones[(i + 7) % 12]]
+				}
+		},
+		{ name: "m", fullname: "minor",
+		  gen: function(i) {
+			return [tones[i], tones[(i + 3) % 12], tones[(i + 7) % 12]]
+		  }
+		}, 
+		{ name: "dim", fullname: "diminished",
+		  gen: function(i) {
+			return [tones[i], tones[(i + 3) % 12], tones[(i + 6) % 12]]
+		  }
+		}, 
+		{ name: "aug", fullname: "augmented",
+		  gen: function(i) {
+			return [tones[i], tones[(i + 4) % 12], tones[(i + 8) % 12]]
+		  }
+		},
+	 ]
+	supportedChords = supportedChords.concat([
+		{ name: "7", fullname: "seventh",
+		  gen: function(i){
+			return chordTypeByName("").gen(i).concat(tones[(i + 10) % 12])
+		  }
+		},
+		{ name:"maj7", fullname: "major 7th",
+		  gen: function(i){
+			return chordTypeByName("").gen(i).concat(tones[(i + 11) % 12])
+		  }
+		},
+		{ name:"m7", fullname: "minor 7th",
+		  gen: function(i){
+			return chordTypeByName("m").gen(i).concat(tones[(i + 10) % 12])
+		  }
+		}
+    ])
+	var chordTypeByName = function(name){
+		return _.find(supportedChords, function(x){return x.name == name})
+	}                 
   return {
-    Types : [
-    { name: "", fullname: "major", 
-      gen:  function(i) {
-              return [tones[i], tones[(i + 4) % 12], tones[(i + 7) % 12]]
-            }
-    },
-    { name: "m", fullname: "minor",
-      gen: function(i) {
-        return [tones[i], tones[(i + 3) % 12], tones[(i + 7) % 12]]
-      }
-    }, 
-    { name: "dim", fullname: "diminished",
-      gen: function(i) {
-        return [tones[i], tones[(i + 3) % 12], tones[(i + 6) % 12]]
-      }
-    }, 
-    /*
-     * { name: "aug", fullname: "augmented",
-      gen: function(i) {
-        return [tones[i], tones[(i + 4) % 12], tones[(i + 8) % 12]]
-      }
-    },
-    { name: "7", fullname: "seventh",
-      gen: function(i){
-        return major.gen(i).concat(tones[(i + 10) % 12])
-      }
-    },
-    { name:"maj7", fullname: "major7th",
-      gen: function(i){
-        return major.gen(i).concat(tones[(i + 11) % 12])
-      }
-    },
-    { name:"m7", fullname: "minor7th",
-      gen: function(i){
-        return minor.gen(i).concat(tones[(i + 10) % 12])
-      }
-    }
-      */
-    ],
+    Chords : supportedChords,
+	chordTypeByName : chordTypeByName,
     Steps:{
       "Major" : [2, 2, 1, 2, 2, 2,1],
       "Minor" : [2, 1, 2, 2, 1, 2, 2],
       "Harmonic Minor": [2, 1, 2, 2, 1, 3, 1],
+      "Blues": [3, 2, 1, 1, 3],
     },
 
   canonicalize : function(note){

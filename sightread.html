@@ -8,18 +8,39 @@
           .current {
             font-weight:bold;
           }
+          .selected {
+            font-weight:bold;
+          }
+          .chordBox{
+            text-align:center;
+            background-color: white;
+            color:black;
+            border:1px solid black;
+            padding:10px;
+            font-size:2em;
+            width:80px;
+          }
+          .chordBox.selected{
+            border:1px solid red;
+            background-color: #5bc0de;
+            color:black;
+            font-weight:bold;
+          }
     </style>
   </head>
   <body>
     <div id="music">
     </div>
     <div id="example"></div>
-    <link rel="stylesheet" type="text/css" href="skeleton.css"></link>
+    <link rel="stylesheet" type="text/css" href="theme.min.css"></link>
+    <script src='react.js'></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/0.14.0/react-dom.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-bootstrap/0.27.3/react-bootstrap.min.js"></script>
     <script src='jquery.min.js'></script>
+    <script src='bootstrap.min.js'></script>
     <script src='underscore-min.js'></script>
     <script src='WebMIDIAPI.min.js'></script>
     <script src='vexflow-min.js'></script>
-    <script src='react.js'></script>
     <script src='JSXTransformer.js'></script>
     <script src='Base64binary.js'></script>
     <script src='MIDI.min.js'></script>
