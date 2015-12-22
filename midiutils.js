@@ -1,4 +1,5 @@
-function setupMidi(callbacks){
+var Scale = require("./scale.js")
+exports.setupMidi = function(callbacks){
   if (navigator.requestMIDIAccess) {
     navigator.requestMIDIAccess({sysex:false}).then(function(midiAccess){ 
       var midi = midiAccess;
@@ -18,35 +19,35 @@ function setupMidi(callbacks){
   }
 }
 
-function getVelocity(data) {
+exports.getVelocity = function(data) {
   if (data[0] >= 128 && data[0] <= 159) {
     return data[2] / MAX_MIDI_VALUE;
   }
 }
 
-function getNote(data) {
+exports.getNote = function(data) {
   if (data[0] >= 128 && data[0] <= 159) {
     return data[1];
   }
 }
 
-function getLetter(data, scale) {
-  var scaleMap = scaleMaps.cMajor;
-  scaleMap = scaleMaps[scale] || scaleMap;
+exports.getLetter = function getLetter(data, scale) {
+  var scaleMap = Scale.scaleMaps.cMajor;
+  scaleMap = Scale.scaleMaps[scale] || scaleMap;
   if (data[0] >= 128 && data[0] <= 159) {
     return scaleMap[data[1] % 12];
   }
 }
 
-function getOctave(data, scale) {
-  var scaleMap = scaleMaps.cMajor;
-  scaleMap = scaleMaps[scale] || scaleMap;
+exports.getOctave = function(data, scale) {
+  var scaleMap = Scale.scaleMaps.cMajor;
+  scaleMap = Scale.scaleMaps[scale] || scaleMap;
   if (data[0] >= 128 && data[0] <= 159) {
     return Math.floor(data[1] / 12);
   }
 }
 
-function midiEventType (data) {
+exports.eventType = function(data) {
   if (data[0] >= 128 && data[0] <= 143) {
     return 'Note Off';
   }

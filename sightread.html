@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
+    <link href='https://fonts.googleapis.com/css?family=Lato' rel='stylesheet' type='text/css'>
         <style>
           .note {
             color: red;
@@ -11,6 +12,12 @@
           .selected {
             font-weight:bold;
           }
+          body {
+            font-family: "Lato", "sans serif";
+          }
+          option {
+            font-family: "Lato", "sans serif";
+          }
           .chordBox{
             text-align:center;
             background-color: white;
@@ -18,7 +25,7 @@
             border:1px solid black;
             padding:10px;
             font-size:2em;
-            width:80px;
+            width:100px;
           }
           .chordBox.selected{
             border:1px solid red;
@@ -27,17 +34,19 @@
             font-weight:bold;
           }
     </style>
+    <script src="midijs2/midi.js/build/MIDI.min.js"></script>
+    <script src="midijs2/midi.js/inc/shim/Base64.js"></script>
+    <script src="midijs2/midi.js/inc/shim/Base64Binary.js"></script>
   </head>
   <body>
     <div id="music">
     </div>
     <div id="example"></div>
-    <link rel="stylesheet" type="text/css" href="theme.min.css"></link>
+    <script src="bundle.js"></script>
+    <!--
     <script src='react.js'></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/react/0.14.0/react-dom.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-bootstrap/0.27.3/react-bootstrap.min.js"></script>
     <script src='jquery.min.js'></script>
-    <script src='bootstrap.min.js'></script>
     <script src='underscore-min.js'></script>
     <script src='WebMIDIAPI.min.js'></script>
     <script src='vexflow-min.js'></script>
@@ -46,14 +55,11 @@
     <script src='MIDI.min.js'></script>
     <script src='scale.js' type="text/jsx"></script>
     <script src='midiutils.js' type="text/jsx"></script>
-    <!--<script src='sightread.js' type="text/jsx"></script>-->
+    -->
+    <!--<script src='sightread.js' type="text/jsx"></script>
     <script src='sightread2.js' type="text/jsx"></script>
     <script src='Flux.js' type="text/jsx"></script>
-    <script>
-      window.onload = function () {
-        MIDI.loadPlugin({ soundfontUrl: "./", instrument: "acoustic_grand_piano", })
-      };
-    </script>
+  -->
   </body>
 </html>
  
