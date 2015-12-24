@@ -275,10 +275,14 @@ var SiteContainer = React.createClass(
       render: function(){
         return (
           <div>
-			<select onChange={this.resetType} ref="challengeType">
-				<option value="phrase">Phrase</option>
-				<option value="chords">Chords</option>
-			</select>
+            <span className="custom-select">
+                <select onChange={this.resetType} ref="challengeType">
+                    <optgroup>
+                        <option value="phrase">Phrase</option>
+                        <option value="chords">Chords</option>
+                    </optgroup>
+                </select>
+            </span>
             {
 				this.state.exerciseType == 'phrase' 
 				   ?  
