@@ -208,93 +208,84 @@ var SiteContainer = React.createClass(
     { 
       midiCallback : function(message){
         var cpt = this;
-		if(cpt.state.exerciseType == "phrase"){
-			this.state.challenge.callback(message, function(){
-				cpt.refs.phrase.repaintCanvas();
-			}, function(){
-			  cpt.resetPhrases(cpt.state.phraseFormValues)
-			})
-		}else{
-			this.state.challenge.callback(message, function(){
-				cpt.refs.chordChallengeList.incChordChallenge()
-			}, function(){
-				cpt.resetChords(cpt.state.chordFormValues)
-				cpt.refs.chordChallengeList.resetCounter()
-			})
-		}
+        if(cpt.state.exerciseType == "phrase"){
+          this.state.challenge.callback(message, function(){
+            cpt.refs.phrase.repaintCanvas();
+          }, function(){
+            cpt.resetPhrases(cpt.state.phraseFormValues)
+          })
+        }else{
+          this.state.challenge.callback(message, function(){
+            cpt.refs.chordChallengeList.incChordChallenge()
+          }, function(){
+            cpt.resetChords(cpt.state.chordFormValues)
+            cpt.refs.chordChallengeList.resetCounter()
+          })
+        }
       },
       getInitialState:function(){
         var phrase = generateScalePhrase(Scale.generate("c/4", Scale.Steps.Major, 1), 16);
-		var phraseFormValues =  { keySignature:"C", clef:"treble", scaleType:"Major", octaves:1, intervals:[]}
-		var chordFormValues = {types:[""], chordChallengeType:"random"}
+        var phraseFormValues =  { keySignature:"C", clef:"treble", scaleType:"Major", octaves:1, intervals:[]}
+        var chordFormValues = {types:[""], chordChallengeType:"random"}
         return {exerciseType:"phrase", challenge:new PhraseChallengeHandler(phrase, "C", "treble"), phraseFormValues:phraseFormValues, chordFormValues:chordFormValues};
       },
       resetPhrases: function(formValues){
-		console.log(formValues)
-		var octaves = parseInt(formValues.octaves)
-		var rootOctave = (5 - (octaves) +parseInt(.5 * octaves) )
-		if(formValues.clef != "treble") rootOctave -= 2
-		console.log("octaves:", octaves, "rootOctave", rootOctave, "rootNote", rootNote)
+        var octaves = parseInt(formValues.octaves)
+        var rootOctave = (5 - (octaves) +parseInt(.5 * octaves) )
+        if(formValues.clef != "treble"){
+          rootOctave -= 2
+        }
         var scaleSteps = Scale.Steps[formValues.scaleType]
-		var rootNote = formValues.keySignature.toLowerCase() + "/" + rootOctave
+        var rootNote = formValues.keySignature.toLowerCase() + "/" + rootOctave
         /*
          * for using intervals instead of # notes within scale.
-		var ints = []
+		var ints = [];
 		for(var i=0;i<formValues.intervals.length;i++){
 			ints.push(Scale.intervals[formValues.intervals[i]])
 		}
         var phrase = generateScalePhrase(Scale.generate(rootNote, scaleSteps, octaves), 16, ints);
         */
         var phrase = generateScalePhrase(Scale.generate(rootNote, scaleSteps, octaves), 16, formValues.numnotes);
-		console.log(phrase)
         this.setState({challenge:new PhraseChallengeHandler(phrase, formValues.keySignature, formValues.clef, formValues.intervals), phraseFormValues:formValues});
       },
-	  resetChords: function(formValues){
-		console.log("fv", formValues)
-		if(formValues.chordChallengeType == "random"){
-			var chordsSeq = generateChordSequence(formValues.types, 6)
-		}
+      resetChords: function(formValues){
+        if(formValues.chordChallengeType == "random"){
+          var chordsSeq = generateChordSequence(formValues.types, 6)
+        }
         this.setState({challenge:new ChordChallengeHandler(chordsSeq), chordFormValues:formValues, chordChallenge:chordsSeq});
-
-		console.log("resetting chords channegel !")
-		console.log(this.refs)
-		this.refs.chordChallengeList.resetCounter()
-	  },
-      componentWillMount:function(){
+        this.refs.chordChallengeList.resetCounter()
+      },
+      componentWillMount: function(){
         midiutils.setupMidi([MidiPlayerCallback, this.midiCallback]);
       },
-	  resetType: function(){
-        var exerciseType = React.findDOMNode(this.refs.challengeType).value
-		this.setState({exerciseType:exerciseType})
-		if(exerciseType == "phrase"){
-			this.resetPhrases(this.state.phraseFormValues)
-		}else{
-			this.resetChords(this.state.chordFormValues)
-		}
-	  },
+      resetType: function(){
+        var exerciseType = ReactDOM.findDOMNode(this.refs.challengeType).value
+          this.setState({exerciseType:exerciseType})
+          if(exerciseType == "phrase"){
+            this.resetPhrases(this.state.phraseFormValues)
+          }else{
+            this.resetChords(this.state.chordFormValues)
+          }
+      },
       render: function(){
         return (
           <div>
-            <span className="custom-select">
-                <select onChange={this.resetType} ref="challengeType">
-                    <optgroup>
-                        <option value="phrase">Phrase</option>
-                        <option value="chords">Chords</option>
-                    </optgroup>
-                </select>
-            </span>
+              <select onUpdate={this.resetType} ref="challengeType">
+                    <option value="phrase">Phrase</option>
+                    <option value="chords">Chords</option>
+              </select>
             {
-				this.state.exerciseType == 'phrase' 
-				   ?  
-					<div>
-						<PhraseSettingsForm changed={this.resetPhrases}/>
-						<PhraseCanvas challenge={this.state.challenge} ref="phrase" enabled={this.state.exerciseType=="phrase"}/> 
-					</div>
-				   : <div>
-						<ChordSettingsForm changed={this.resetChords}/>
-						<ChordChallenges challenges={this.state.chordChallenge} ref="chordChallengeList" enabled={this.state.exerciseType=="chords"}/>
-					</div>
-			}
+              this.state.exerciseType == 'phrase' ?  
+                <div>
+                  <PhraseSettingsForm changed={this.resetPhrases}/>
+                  <PhraseCanvas challenge={this.state.challenge} ref="phrase" enabled={this.state.exerciseType=="phrase"}/> 
+                </div>
+                : 
+                <div>
+                  <ChordSettingsForm changed={this.resetChords}/>
+                  <ChordChallenges challenges={this.state.chordChallenge} ref="chordChallengeList" enabled={this.state.exerciseType=="chords"}/>
+                </div>
+            }
           </div>
         );
       }
@@ -302,68 +293,67 @@ var SiteContainer = React.createClass(
 )
 
 var ChordChallenges = React.createClass( 
-{
-	getInitialState:function(){
-		return {currentChallengeIndex:0}
-	},
-	resetCounter: function(){
-	console.log("Resetting counter")
-		this.setState({currentChallengeIndex:0})
-	},
-	incChordChallenge: function(){
-		this.setState({currentChallengeIndex:this.state.currentChallengeIndex+1})
-	},
-	render: function(){
-	  var cpt = this;
-	  return (
-		<div className="container">
-			<div className="row">
-				{_.map(this.props.challenges, function(x, i){ return <div key={"chordChallenge_" + i} className={"pull-left chordBox" + (i==cpt.state.currentChallengeIndex?" selected":"")}>{fixAccidental(x.name)}</div>})}
-			</div>
-		</div>
-	  )
-	}
-}
+  {
+    getInitialState: function(){
+      return {currentChallengeIndex:0};
+    },
+    resetCounter: function(){
+      this.setState({currentChallengeIndex:0})
+    },
+    incChordChallenge: function(){
+      this.setState({currentChallengeIndex:this.state.currentChallengeIndex+1})
+    },
+    render: function(){
+      var cpt = this;
+      return (
+        <div className="container">
+          <div className="row">
+            {_.map(this.props.challenges, function(x, i){ return <div key={"chordChallenge_" + i} className={"pull-left chordBox" + (i==cpt.state.currentChallengeIndex?" selected":"")}>{fixAccidental(x.name)}</div>})}
+          </div>
+        </div>
+      )
+    }
+  }
 )
 
 var ChordSettingsForm = React.createClass(
   {
-	getInitialState: function(){
-		return {chordChallengeType:"random"}
-	},
+    getInitialState: function(){
+      return {chordChallengeType:"random"}
+    },
     triggerFormUpdate: function(callback){
-	  var component = this
-	  var formValues = {
-		types:_.pluck(_.filter(Scale.Chords, function(x){ return React.findDOMNode(component.refs[x.name]).checked }), "name"),
-		chordChallengeType: ReactDOM.findDOMNode(this.refs.chordChallengeType).value,
-	  }
-	  this.setState(formValues)
-	  this.props.changed(formValues)
+      var component = this
+      var formValues = {
+        types: _.pluck(_.filter(Scale.Chords, function(x){ return React.findDOMNode(component.refs[x.name]).checked }), "name"),
+        chordChallengeType: ReactDOM.findDOMNode(this.refs.chordChallengeType).value,
+      }
+      this.setState(formValues)
+      this.props.changed(formValues)
     },
     render: function(){
-	  var cpt = this
+      var cpt = this
       return (
-        <form onChange={this.triggerFormUpdate}>
-			<select ref="chordChallengeType" defaultValue="random">
-				<option value="random">Set of random chords</option>
-				<option value="progression">Chords from a progression</option>
-			</select>
-			{ cpt.state.chordChallengeType == 'random' ? 
-				<ul>
-				{_.map(Scale.Chords, function(x){
-					return <li><label>{x.fullname}<input ref={x.name} type="checkbox"/></label></li>
-				})}
-				</ul>
-				:
-				<div>
-				  <select ref="keySignature">
-					{_.map(Scale.scaleMaps.cMajor, function(x){return <option value={x} key={x}>{x}</option>})}
-				  </select>
-				  <select ref="progression">
-					<option value="a">ii-V-I</option>
-				  </select>
-				</div>
-			}
+        <form onUpdate={this.triggerFormUpdate}>
+          <select ref="chordChallengeType" defaultValue="random">
+            <option value="random">Set of random chords</option>
+            <option value="progression">Chords from a progression</option>
+          </select>
+          { cpt.state.chordChallengeType == 'random' ? 
+            <ul>
+              {_.map(Scale.Chords, function(x){
+              return <li><label><input type="checkbox" ref={x.name}/>{x.fullname}</label></li>
+              })}
+            </ul>
+            :
+            <div>
+              <select ref="keySignature">
+                {_.map(Scale.scaleMaps.cMajor, function(x){return <option value={x} key={x}>{x}</option>})}
+              </select>
+              <select ref="progression">
+                <option value="a">ii-V-I</option>
+              </select>
+            </div>
+          }
         </form>
       );
     },
@@ -373,7 +363,7 @@ var ChordSettingsForm = React.createClass(
 var PhraseSettingsForm = React.createClass(
   {
     triggerFormUpdate: function(callback){
-	  var component = this
+      var component = this
       var data = {
         keySignature: ReactDOM.findDOMNode(this.refs.keySignature).value,
         clef: React.findDOMNode(this.refs.clef).value,
@@ -387,7 +377,7 @@ var PhraseSettingsForm = React.createClass(
     },
     render: function(){
       return (
-        <form onChange={this.triggerFormUpdate}>
+        <form onUpdate={this.triggerFormUpdate}>
           <select ref="keySignature">
             {_.map(Scale.scaleMaps.cMajor, function(x){return <option value={x} key={x}>{x}</option>})}
           </select>
@@ -435,9 +425,9 @@ var PhraseCanvas = React.createClass(
       this.repaintCanvas();
     },
     repaintCanvas: function(){
-	  if(!this.props.enabled){
-		  return
-	  }
+      if(!this.props.enabled){
+        return
+      }
       var canv = ReactDOM.findDOMNode(this.refs["canv"]);
       var renderer = new Vex.Flow.Renderer(canv, Vex.Flow.Renderer.Backends.CANVAS);
       var ctx = renderer.getContext();
