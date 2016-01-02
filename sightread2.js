@@ -60,38 +60,34 @@ var diffState = function(a,b, anyVoicing){
 
 function generateChordSequence(typesAllowed, n){
   if(typesAllowed.length == 0){
-	typesAllowed = ["major"]
+    typesAllowed = ["major"];
   }
   var challenges = []
   for(var i=0;i<n;i++){
     // get a random chord form the set of allowed chord types
-	var chordTypeName = _.sample(typesAllowed)
-	var chordObj = Scale.chordTypeByName(chordTypeName)
-
-	var rootNote = _.sample(Scale.scaleMaps.cMajor)
-
-	console.log(chordObj)
-	var ns = _.map(chordObj.gen(_.indexOf(Scale.scaleMaps.cMajor, rootNote)), function(x){return x.toLowerCase()}) 
-	challenges.push({name: rootNote + chordObj.name, notes: ns})
+    var chordTypeName = _.sample(typesAllowed);
+    var chordObj = Scale.chordTypeByName(chordTypeName);
+    var rootNote = _.sample(Scale.scaleMaps.cMajor);
+    var ns = _.map(chordObj.gen(_.indexOf(Scale.scaleMaps.cMajor, rootNote)), function(x){return x.toLowerCase()}) ;
+    challenges.push({name: rootNote + chordObj.name, notes: ns});
   }
-  console.log("challenges is", challenges)
   return challenges
 }
 
-function generateScalePhrase(scale, length, numNotes){//allowedIntervals){
-  var out = []
-  var length = length || 4
+function generateScalePhrase(scale, length, numNotes){
+  var out = [];
+  var length = length || 4;
   if(!numNotes){
-    numNotes = 1
+    numNotes = 1;
   }
   //if (!allowedIntervals){
 	//allowedIntervals = []
   //}
   for(var i=0;i<length;i++){
-    var nextKeySet = []
+    var nextKeySet = [];
     while(nextKeySet.length < numNotes){
-        var filteredScale = _.filter(scale, function(x){return !_.contains(nextKeySet, x)})
-        nextKeySet.push(_.sample(filteredScale))
+        var filteredScale = _.filter(scale, function(x){return !_.contains(nextKeySet, x)});
+        nextKeySet.push(_.sample(filteredScale));
     }
 
     /*
@@ -119,7 +115,7 @@ function generateScalePhrase(scale, length, numNotes){//allowedIntervals){
 }
 
 var objectifyChordNotes = function(ns){
-	return _.object(ns, _.times(ns.length, _.constant(true)));
+  return _.object(ns, _.times(ns.length, _.constant(true)));
 }
 
 
@@ -147,12 +143,12 @@ function ChordChallengeHandler(chordsSeq){
       if(outer.currentIndex==chordsSeq.length-1){
         onComplete()
       }else{
-		  if(onCorrect){
-			onCorrect();
-		  }
-		  outer.currentIndex += 1;
-		  outer.correctState = objectifyChordNotes(chordsSeq[outer.currentIndex].notes)
-	  }
+        if(onCorrect){
+          onCorrect();
+        }
+        outer.currentIndex += 1;
+        outer.correctState = objectifyChordNotes(chordsSeq[outer.currentIndex].notes);
+      }
     }else{
       console.log("incorrect!");
     }
@@ -226,9 +222,11 @@ var SiteContainer = React.createClass(
       },
       getInitialState:function(){
         var phrase = generateScalePhrase(Scale.generate("c/4", Scale.Steps.Major, 1), 16);
-        var phraseFormValues =  { keySignature:"C", clef:"treble", scaleType:"Major", octaves:1, intervals:[]}
+        //var keySig = _.sample(Scale.scaleMaps.cMajor)
+        var keySig = "C"
+        var phraseFormValues =  { keySignature:keySig, clef:"treble", scaleType:"Major", octaves:1, intervals:[]}
         var chordFormValues = {types:[""], chordChallengeType:"random"}
-        return {exerciseType:"phrase", challenge:new PhraseChallengeHandler(phrase, "C", "treble"), phraseFormValues:phraseFormValues, chordFormValues:chordFormValues};
+        return {exerciseType:"phrase", challenge:new PhraseChallengeHandler(phrase, keySig, "treble"), phraseFormValues:phraseFormValues, chordFormValues:chordFormValues};
       },
       resetPhrases: function(formValues){
         var octaves = parseInt(formValues.octaves)
@@ -331,7 +329,7 @@ var ChordSettingsForm = React.createClass(
     triggerFormUpdate: function(callback){
       var component = this
       var formValues = {
-        types: _.pluck(_.filter(Scale.Chords, function(x){ return React.findDOMNode(component.refs[x.name]).checked }), "name"),
+        types: _.pluck(_.filter(Scale.Chords, function(x){ return ReactDOM.findDOMNode(component.refs[x.name]).checked }), "name"),
         chordChallengeType: ReactDOM.findDOMNode(this.refs.chordChallengeType).value,
       }
       this.setState(formValues)
@@ -373,10 +371,10 @@ var PhraseSettingsForm = React.createClass(
       var component = this
       var data = {
         keySignature: ReactDOM.findDOMNode(this.refs.keySignature).value,
-        clef: React.findDOMNode(this.refs.clef).value,
-        scaleType:React.findDOMNode(this.refs.scaleType).value,
-        octaves:React.findDOMNode(this.refs.octaves).value, 
-        numnotes:React.findDOMNode(this.refs.numnotes).value,  
+        clef: ReactDOM.findDOMNode(this.refs.clef).value,
+        scaleType:ReactDOM.findDOMNode(this.refs.scaleType).value,
+        octaves:ReactDOM.findDOMNode(this.refs.octaves).value, 
+        numnotes:ReactDOM.findDOMNode(this.refs.numnotes).value,  
         //intervals:_.filter(_.keys(Scale.intervals), function(x){ return React.findDOMNode(component.refs["interval_"+x]).checked })
       };
       console.log(data)
@@ -384,7 +382,7 @@ var PhraseSettingsForm = React.createClass(
     },
     render: function(){
       return (
-        <form onUpdate={this.triggerFormUpdate}>
+        <form onChange={this.triggerFormUpdate}>
           <select ref="keySignature">
             {_.map(Scale.scaleMaps.cMajor, function(x){return <option value={x} key={x}>{x}</option>})}
           </select>
@@ -405,14 +403,6 @@ var PhraseSettingsForm = React.createClass(
         </form>
       );
     },
-
-  /*
-  <ul>
-    {_.map(_.keys(Scale.intervals), function(k){
-      return <li><label>{k}<input type="checkbox" value={k} ref={"interval_"+k}/></label></li>
-    })}
-  </ul>
-  */
   }
 )
 
@@ -421,7 +411,7 @@ var PhraseCanvas = React.createClass(
     render: function() {
       return (
         <div>
-          <canvas ref="canv" width="600" height="400"></canvas>
+          <canvas ref="canv" width="800px" height="400"></canvas>
         </div>
       );
     },
