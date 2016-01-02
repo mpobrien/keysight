@@ -6,6 +6,7 @@ var $ = require("jquery")
 var Vex = require("vexflow")
 var midiutils = require("./midiutils.js")
 
+
 //var scaleMaps = {
   //'cMajor': [ 'C', 'C#', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'G#', 'A', 'Bb', 'B' ]
 //}
@@ -267,14 +268,20 @@ var SiteContainer = React.createClass(
             this.resetChords(this.state.chordFormValues)
           }
       },
+
+              //<select onUpdate={this.resetType} ref="challengeType">
+                    //<option value="phrase">Phrase</option>
+                    //<option value="chords">Chords</option>
+              //</select>
       render: function(){
         return (
           <div>
-              <select onUpdate={this.resetType} ref="challengeType">
-                    <option value="phrase">Phrase</option>
-                    <option value="chords">Chords</option>
-              </select>
+            <select onChange={this.resetType} ref="challengeType">
+              <option value="phrase">Phrases</option>
+              <option value="chords">Chords</option>
+            </select>
             {
+
               this.state.exerciseType == 'phrase' ?  
                 <div>
                   <PhraseSettingsForm changed={this.resetPhrases}/>
@@ -341,7 +348,7 @@ var ChordSettingsForm = React.createClass(
           { cpt.state.chordChallengeType == 'random' ? 
             <ul>
               {_.map(Scale.Chords, function(x){
-              return <li><label><input type="checkbox" ref={x.name}/>{x.fullname}</label></li>
+              return <li key={x.name}><label><input type="checkbox" ref={x.name}/>{x.fullname}</label></li>
               })}
             </ul>
             :
