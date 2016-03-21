@@ -1,3 +1,5 @@
+var ExtractTextPlugin = require('extract-text-webpack-plugin');
+
 module.exports = {
 	entry:"./sightread2.js",
 	output:{
@@ -5,7 +7,7 @@ module.exports = {
 		filename:"bundle.js"
 	},
   resolve:{
-    extensions:['','.js','.jsx','.scss']
+    extensions:['','.js','.jsx','.scss', '.less']
   },
 	node:{
 		fs:"empty",
@@ -14,12 +16,17 @@ module.exports = {
 	module:{
 		loaders: [
 			{ test: /\.css$/, loader: "style!css" },
-			{ test: /\.scss$/, loaders: ["style", "css", "sass"] },
+			{ test: /\.scss$/, loader: ExtractTextPlugin.extract('css!sass')},
 			{ test: /.jsx?/, loader:'babel-loader', exclude: /node_modules/,
 			   query: {
 			     presets: ['es2015', 'react']
 			   }
 			}
 		]
-	}
+	}, 
+  plugins: [
+    new ExtractTextPlugin('public/style.css', {
+      allChunks: true,
+    })
+  ],
 }

@@ -1,4 +1,8 @@
 var _ = require("underscore")
+
+var sharp = '♯'
+var flat = '♭'
+
 exports.noteOnly = function(noteName){
   return noteName.split("/")[0]
 }
@@ -8,8 +12,8 @@ exports.octaveOnly = function(noteName){
 }
 
 exports.accidental = function(noteName){
-    var accidental = noteName.indexOf("#")
-    accidental = accidental < 0 ? noteName.indexOf("b") : accidental
+    var accidental = noteName.indexOf(sharp)
+    accidental = accidental < 0 ? noteName.indexOf(flat) : accidental
     if(accidental>=0){
       return noteName[accidental]
     }
@@ -37,13 +41,14 @@ exports.accidental = function(noteName){
 // I IV I V7 IV I
 // I IV vii° iii vi ii V I
 
-var notes = [ 'c', 'c#', 'd', 'eb', 'e', 'f', 'f#', 'g', 'g#', 'a', 'bb', 'b' ]
-var enharmonics = [["c#","db"], ["eb","d#"], ["f#", "gb"], ["g#", "ab"], ["bb", "a#"]]
+var notes = [ 'c', 'c♯', 'd', 'e♭', 'e', 'f', 'f♯', 'g', 'a♭', 'a', 'b♭', 'b' ]
+var enharmonics = [["c♯","d♭"], ["d♯", "e♭",], ["g♭", "f♯"], ["a♭", "g♯"], ["b♭", "a♯"]]
+var keySignatureType = [null, sharp, sharp, flat, sharp, flat, sharp, 
 exports.notes = notes
 exports.enharmonics = enharmonics
 
 var scaleMaps = {
-  'cMajor': [ 'C', 'C#', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'G#', 'A', 'Bb', 'B' ]
+  'cMajor': [ 'C', 'C♯', 'D', 'E♭', 'E', 'F', 'F♯', 'G', 'A♭', 'A', 'B♭', 'B' ]
 }
 exports.scaleMaps = scaleMaps
 var tones = scaleMaps.cMajor
@@ -70,7 +75,7 @@ var supportedChords = [
 	{ name: "m", fullname: "minor",
 	  gen: function(i) {
 		return [tones[i], tones[(i + 3) % 12], tones[(i + 7) % 12]]
-	  }
+	}
 	}, 
 	{ name: "dim", fullname: "diminished",
 	  gen: function(i) {
@@ -105,13 +110,27 @@ var chordTypeByName = function(name){
 	return _.find(supportedChords, function(x){return x.name == name})
 }                 
 exports.chordTypeByName = chordTypeByName
-var Steps= {
-	"Major" : [2, 2, 1, 2, 2, 2,1],
-	"Minor" : [2, 1, 2, 2, 1, 2, 2],
-	"Harmonic Minor": [2, 1, 2, 2, 1, 3, 1],
-	"Blues": [3, 2, 1, 1, 3],
+var Types = [
+	{name:"Major", steps:[2, 2, 1, 2, 2, 2, 1], signature:"major"},
+	{name:"Minor", steps:[2, 1, 2, 2, 1, 2, 2], signature:"minor"},
+	{name:"Harmonic Minor", steps: [2, 1, 2, 2, 1, 3, 1], signature:"minor"},
+	{name:"Blues", steps: [3, 2, 1, 1, 3], signature:"major"},
+  {name:"Dorian", steps: [2, 1, 2, 2, 2, 1, 2], signature:"major"},
+  {name:"Phrygian", steps: [1, 2, 2, 2, 1, 2, 2], signature:"major"},
+  {name:"Lydian", steps: [2, 2, 2, 1, 2, 2, 1], signature:"major"},
+  {name:"Mixolydian", steps: [2, 2, 1, 2, 2, 1, 2], signature:"major"},
+  {name:"Aeolian", steps: [2, 1, 2, 2, 1, 2, 2], signature:"major"},
+  {name:"Locrian", steps: [1, 2, 2, 1, 2, 2, 2], signature:"major"},
+  {name:"Lydian ♭7", steps: [2, 2, 2, 1, 2, 1, 1], signature:"major"},
+  {name:"Altered", steps: [1, 2, 1, 2, 2, 2, 1], signature:"major"},
+  {name:"Symmetrical Diminished", steps: [1, 2, 1, 2, 1, 2, 2], signature:"major"},
+]
+
+exports.Types = Types
+exports.TypeByName = function(name){
+  return _.find(Types, function(x){return x.name==name})
 }
-exports.Steps = Steps
+
 exports.intervals = {
 		"minor 2nd":1,
 		"major 2nd":2,

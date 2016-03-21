@@ -2,79 +2,29 @@
 <html>
   <head>
     <link href='https://fonts.googleapis.com/css?family=Lato' rel='stylesheet' type='text/css'>
-        <style>
-          .note {
-            color: red;
-          }
-          .current {
-            font-weight:bold;
-          }
-          .selected {
-            font-weight:bold;
-          }
-          .custom-select {
-            margin:10px;
-            vertical-align:middle;
-            font-size:1.5em;
-            position: relative;
-            display: inline-block;
-
-
-          }
-          .custom-select::before, .custom-select::after {
-              content: "";
-              position: absolute;
-              pointer-events: none;
-          }
-          body {
-            font-family: "Lato", "sans serif";
-          }
-          optgroup {
-            font-size:48px;
-          }
-          .chordBox{
-            text-align:center;
-            background-color: white;
-            color:black;
-            border:1px solid black;
-            padding:10px;
-            font-size:2em;
-            width:100px;
-          }
-          .chordBox.selected{
-            border:1px solid red;
-            background-color: #5bc0de;
-            color:black;
-            font-weight:bold;
-          }
-    </style>
+    <link href="public/style.css" rel="stylesheet" />
+    <link href="bootstrap.min.css" rel="stylesheet" />
     <script src="midijs2/midi.js/build/MIDI.min.js"></script>
     <script src="midijs2/midi.js/inc/shim/Base64.js"></script>
     <script src="midijs2/midi.js/inc/shim/Base64Binary.js"></script>
   </head>
   <body>
-    <div id="music">
-    </div>
+    <div class="container">
+      <div class="row">
+        <div class="col-xs-6">
+          <h1>Piano Trainer</h1>
+        </div>
+     </div>
+      <div class="row">
+        <div class="col-xs-12">
+          <div id="music">
+          </div>
+        </div>
+      </div>
     <div id="example"></div>
     <script src="bundle.js"></script>
-    <!--
-    <script src='react.js'></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/0.14.0/react-dom.min.js"></script>
-    <script src='jquery.min.js'></script>
-    <script src='underscore-min.js'></script>
-    <script src='WebMIDIAPI.min.js'></script>
-    <script src='vexflow-min.js'></script>
-    <script src='JSXTransformer.js'></script>
-    <script src='Base64binary.js'></script>
-    <script src='MIDI.min.js'></script>
-    <script src='scale.js' type="text/jsx"></script>
-    <script src='midiutils.js' type="text/jsx"></script>
-    -->
-    <!--<script src='sightread.js' type="text/jsx"></script>
-    <script src='sightread2.js' type="text/jsx"></script>
-    <script src='Flux.js' type="text/jsx"></script>
-  -->
+    </div>
   </body>
 </html>
- 
+
 
