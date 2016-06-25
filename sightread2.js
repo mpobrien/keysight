@@ -9,7 +9,7 @@ var Nav = require('react-bootstrap').Nav;
 var NavItem = require('react-bootstrap').NavItem;
 var MenuItem = require('react-bootstrap').MenuItem;
 var NavDropdown = require('react-bootstrap').NavDropdown;
-var css = require("./sightread.scss");
+//var css = require("./sightread.scss");
 var teoria = require("teoria")
 
 var scaleTypes = _.map(Scale.Types, function(obj){

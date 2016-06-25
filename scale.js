@@ -43,7 +43,7 @@ exports.accidental = function(noteName){
 
 var notes = [ 'c', 'c♯', 'd', 'e♭', 'e', 'f', 'f♯', 'g', 'a♭', 'a', 'b♭', 'b' ]
 var enharmonics = [["c♯","d♭"], ["d♯", "e♭",], ["g♭", "f♯"], ["a♭", "g♯"], ["b♭", "a♯"]]
-var keySignatureType = [null, sharp, sharp, flat, sharp, flat, sharp, 
+//var keySignatureType = [null, sharp, sharp, flat, sharp, flat, sharp, 
 exports.notes = notes
 exports.enharmonics = enharmonics
 
